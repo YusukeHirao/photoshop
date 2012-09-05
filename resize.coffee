@@ -24,9 +24,14 @@ Number::fillZero = (n) ->
 # ハッシュの出力用（再帰なし）
 varDump = (obj) ->
 	_rlt = []
-	for _key, _val of obj
-		_rlt.push _key + ': ' + _val
-	_rlt.join '\n'
+	for own _key of obj
+		try
+			_val = obj[_key]
+			unless _val instanceof Function then _rlt.push _key + ': ' + _val
+		catch error
+	$window = new Window 'dialog', 'log', [200, 150, 1200, 650], resizable: true, closeButton: true
+	$window.add 'edittext', [0, 0, 1000, 500], _rlt.join '\n'
+	$window.show()
 
 # リサイズ
 resize = (width, height) ->
@@ -82,6 +87,15 @@ close = (showDialog = false) ->
 	activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 	return
 
+
+varDump app
+#$window = new Window 'dialog', 'Sample', [200, 150, 500, 250], resizable: true, closeButton: true
+#$width = $window.add 'edittext', [20, 20, 100, 50], '100'
+#$window.show();
+
+
+
+###
 filter = undefined # TODO: getFilesの引数はまだ理解していないのであとで解決する。
 targetFolder = Folder.selectDialog '対象のフォルダを選択してください'
 saveFolder = Folder.selectDialog '保存先のフォルダを選択してください'
