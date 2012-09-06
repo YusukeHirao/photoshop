@@ -1,6 +1,6 @@
 ###*
  * リサイズ&トリミング
- * version 1.1
+ * version 1.2
  ###
 
 # ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- # Global Settings #
@@ -28,17 +28,21 @@ varDump = (obj) ->
 
 # ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- # Classes #
 class ControlUI
-	constructor: ($window, @type, @width = 100, @height = 20, @left = 0, @top = 0, options = []) ->
-		@window = $window.window
+	constructor: (@$window, @type, @width = 100, @height = 20, @left = 0, @top = 0, options = []) ->
+		@window = @$window.window
 		@context = @window.add.apply @window, [@type, [@left, @top, @width + @left, @height + @top]].concat options
 	close: (value) ->
 		@window.close value
-	val: ->
+	val: (getValue) ->
 		switch @type
 			when 'edittext', 'statictext'
-				value = @context.text
+				type = 'text'
 			else
-				value = @context.value
+				type = 'value'
+		if getValue?
+			@context[type] = value = getValue.toString()
+		else
+			value = @context[type]
 		value
 	on: (event, callback) ->
 		event = event.toLowerCase().replace(/^on/i, '').replace /^./, (character) ->
@@ -53,6 +57,18 @@ class WindowUI
 		@window = new Window @type, @name, [0, 0, @width, @height], options
 		@window.center()
 		@controls = []
+		@onOK = ->
+		@onCancel = ->
+		BUTTON_WIDTH = 75
+		BUTTON_HEIGHT = 20
+		BUTTON_MARGIN = 10
+		@addButton 'OK', BUTTON_WIDTH, BUTTON_HEIGHT, @width - BUTTON_WIDTH - BUTTON_MARGIN, @height - BUTTON_HEIGHT - BUTTON_MARGIN,
+			click: ->
+				@$window.onOK.apply @, arguments
+		@addButton 'キャンセル', BUTTON_WIDTH, BUTTON_HEIGHT, @width - BUTTON_WIDTH - BUTTON_MARGIN - BUTTON_WIDTH - BUTTON_MARGIN, @height - BUTTON_HEIGHT - BUTTON_MARGIN,
+			click: ->
+				@$window.onCancel.apply @, arguments
+				@close()
 		stop = callback?.call @
 		unless stop is false
 			@show()
@@ -82,13 +98,19 @@ class WindowUI
 		@addControl 'button', width, height, left, top, [label], events
 	addRadio: (label, width, height, left, top, events) ->
 		@addControl 'radiobutton', width, height, left, top, [label], events
+	ok: (callback = ->) ->
+		@onOK = callback
+		@
+	cancel: (callback = ->) ->
+		@onCancel = callback
+		@
 
 class DialogUI extends WindowUI
 	constructor: (@name, @width, @height, options, callback) ->
 		super 'dialog', @name, @width, @height, options, callback
 
 # ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- # Functions #
-resize = (width, height) ->
+resize = (width, height, trim, fill) ->
 	# 元の幅と高さ
 	originWidth = activeDocument.width.value
 	originHeight = activeDocument.height.value
@@ -141,20 +163,29 @@ close = (showDialog = false) ->
 	activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 	return
 
-action = (width, height, trim, fill) ->
+action = (width, height, method, targetFolderPath, saveFolderPath) ->
 	# 連番で保存する
 	AUTO_INCREMENT = true
 	INCREMENT_INITIAL = 0
 	# 連番ゼロ埋め
 	FILL_ZERO = 3
-	# トリミング
-	trim = true
-	# リサイズで余白を作るか
-	fill = true
+
+	switch method
+		when 0
+			trim = true
+			fill = false
+		when 1
+			trim = false
+			fill = true
+		else
+			trim = false
+			fill = false
 
 	filter = undefined # TODO: getFilesの引数はまだ理解していないのであとで解決する。
-	targetFolder = Folder.selectDialog '対象のフォルダを選択してください'
-	saveFolder = Folder.selectDialog '保存先のフォルダを選択してください'
+
+	targetFolder = new Folder targetFolderPath
+	saveFolder = new Folder saveFolderPath
+	
 	fileList = targetFolder.getFiles filter
 
 	width = parseInt width, 10
@@ -174,7 +205,7 @@ action = (width, height, trim, fill) ->
 				if true # AUTO_INCREMENT
 					newName = increment.fillZero(FILL_ZERO) + '.jpg'
 					increment += 1
-				resize width, height
+				resize width, height, trim, fill
 				save newName, saveFolder
 				close()
 			else
@@ -187,22 +218,39 @@ action = (width, height, trim, fill) ->
 
 # ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- # Show Dialog #
 $dialog = new DialogUI 'リサイズ & トリミング', 700, 400, null, ->
-	@addText '幅', 30, 20, 10, 10
-	$width = @addTextbox 100, 20, 50, 10
-	@addText '高さ', 30, 20, 10, 40
-	$height = @addTextbox 100, 20, 50, 40
-	@addText 'リサイズ方法', 70, 20, 10, 70
-	$method = []
-	$method.push @addRadio '描画範囲内の中でトリミング', 200, 20, 10, 100
-	$method.push @addRadio 'トリミングせずに余白を作る', 200, 20, 210, 100
-	@addButton 'OK', 75, 20, 415, 370,
+	@addText '処理フォルダ', 100, 20, 10, 10
+	$targetFolder = @addTextbox 540, 20, 60, 30
+	@addButton '選択', 80, 20, 610, 30,
 		click: ->
-			width = $width.val()
-			height = $height.val()
-			action width, height, true, true
-	@addButton 'キャンセル', 75, 20, 330, 370,
+			targetFolder = Folder.selectDialog '対象のフォルダを選択してください'
+			$targetFolder.val decodeURI targetFolder.getRelativeURI '/'
+	@addText '書き出しフォルダ', 100, 20, 10, 50
+	$saveFolder = @addTextbox 540, 20, 60, 70
+	@addButton '選択', 80, 20, 610, 70,
 		click: ->
-			@close()
+			saveFolder = Folder.selectDialog '保存先のフォルダを選択してください'
+			$saveFolder.val decodeURI saveFolder.getRelativeURI '/'
+	@addText '幅', 30, 20, 10, 100
+	$width = @addTextbox 100, 20, 50, 100
+	@addText '高さ', 30, 20, 10, 130
+	$height = @addTextbox 100, 20, 50, 130
+	@addText 'リサイズ方法', 70, 20, 10, 160
+	$methods = []
+	$methods.push @addRadio '描画範囲内の中に収めトリミング', 220, 20, 10, 190
+	$methods.push @addRadio 'トリミングせずに余白を作る', 220, 20, 230, 190
+	$methods.push @addRadio 'トリミングせずに余白も作らない', 220, 20, 450, 190
+	@ok ->
+		width = $width.val()
+		height = $height.val()
+		targetFolderPath = encodeURI $targetFolder.val()
+		saveFolderPath = encodeURI $saveFolder.val()
+		for $method, i in $methods
+			if $method.val()
+				method = i
+				break
+		alert 'method #' + method
+		@close()
+		action width, height, method, targetFolderPath, saveFolderPath
 
 
 
