@@ -1,6 +1,6 @@
 ###*
  * リサイズ&トリミング
- * version 1.0
+ * version 1.1
  ###
 
 # 連番で保存する
@@ -29,9 +29,57 @@ varDump = (obj) ->
 			_val = obj[_key]
 			unless _val instanceof Function then _rlt.push _key + ': ' + _val
 		catch error
-	$window = new Window 'dialog', 'log', [200, 150, 1200, 650], resizable: true, closeButton: true
-	$window.add 'edittext', [0, 0, 1000, 500], _rlt.join '\n'
-	$window.show()
+	alert _rlt.join '\n'
+	# $window = new Window 'dialog', 'log', [200, 150, 1200, 650], resizable: true, closeButton: true
+	# $window.add 'edittext', [0, 0, 1000, 500], _rlt.join '\n'
+	# $window.show()
+
+# クラス
+class ControlUI
+	constructor: ($window, @type, @width = 100, @height = 20, @left = 0, @top = 0, options = []) ->
+		@window = $window.window
+		@context = @window.add.apply @window, [@type, [@left, @top, @width + @left, @height + @top]].concat options
+	on: (event, callback) ->
+		event = event.toLowerCase().replace(/^on/i, '').replace /^./, (character) ->
+			character.toUpperCase()
+		@context['on' + event] = callback
+		@
+
+class WindowUI
+	constructor: (@type, @name = 'ダイアログボックス', @width = 100, @height = 100, options, callback) ->
+		@window = new Window @type, @name, [0, 0, @width, @height], options
+		@window.center()
+		@controls = []
+		stop = callback?.call @
+		unless stop is false
+			@show()
+	show: ->
+		@window.show()
+		@
+	hide: ->
+		@window.hide()
+		@
+	center: ->
+		@window.center()
+		@
+	addControl: (type, @width, @height, @left, @top, options, events) ->
+		$ctrl = new ControlUI @, type, @width, @height, @left, @top, options
+		if events?
+			for own event, callback of @events
+				$ctrl.on event, callback
+		@controls.push $ctrl
+		$ctrl
+	addTextbox: (@width, @height, @left, @top, @defaultText = '', events) ->
+		@addControl 'edittext', @width, @height, @left, @top, [@defaultText], events
+	addText: (@text = '', @width, @height, @left, @top, events) ->
+		@addControl 'statictext', @width, @height, @left, @top, [@text], events
+
+class DialogUI extends WindowUI
+	constructor: (@name, @width, @height, options, callback) ->
+		super 'dialog', @name, @width, @height, options, callback
+
+
+
 
 # リサイズ
 resize = (width, height) ->
@@ -88,12 +136,11 @@ close = (showDialog = false) ->
 	return
 
 
-varDump app
-#$window = new Window 'dialog', 'Sample', [200, 150, 500, 250], resizable: true, closeButton: true
-#$width = $window.add 'edittext', [20, 20, 100, 50], '100'
-#$window.show();
-
-
+$dialog = new DialogUI 'ダイアログ', 500, 400, null, ->
+	@addText '幅', 30, 20, 10, 10
+	@addTextbox 200, 20, 50, 10
+	@addText '高さ', 30, 20, 10, 40
+	@addTextbox 200, 20, 50, 40
 
 ###
 filter = undefined # TODO: getFilesの引数はまだ理解していないのであとで解決する。
