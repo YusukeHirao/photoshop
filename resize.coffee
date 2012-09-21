@@ -1,6 +1,6 @@
 ###*
  * リサイズ&トリミング
- * version 1.2
+ * version 1.3
  ###
 
 # ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- # Global Settings #
@@ -118,10 +118,10 @@ resize = (width, height, trim, fill) ->
 	originRatio = originHeight / originWidth
 	# 指定の縦横比(高さ÷幅)
 	ratio = height / width
-	if fill
+	if trim
 		resizeWidth = width
 		resizeHeight = height
-		if trim and originWidth > originHeight
+		if originWidth > originHeight
 			trimWidth = originHeight / ratio
 			trimHeight = originHeight
 		else
@@ -129,18 +129,25 @@ resize = (width, height, trim, fill) ->
 			trimHeight = originWidth * ratio
 		activeDocument.resizeCanvas trimWidth, trimHeight, AnchorPosition.MIDDLECENTER
 	else
-		if width > height
-			resizeWidth = height / originRatio
-			resizeHeight = height
-			if resizeWidth > width
-				resizeWidth = width
-				resizeHeight = width * originRatio
-		else
+		if fill
 			resizeWidth = width
-			resizeHeight = width * originRatio
-			if resizeHeight > height
+			resizeHeight = height
+			trimWidth = originWidth
+			trimHeight = originWidth * ratio
+			activeDocument.resizeCanvas trimWidth, trimHeight, AnchorPosition.MIDDLECENTER
+		else
+			if width > height
 				resizeWidth = height / originRatio
 				resizeHeight = height
+				if resizeWidth > width
+					resizeWidth = width
+					resizeHeight = width * originRatio
+			else
+				resizeWidth = width
+				resizeHeight = width * originRatio
+				if resizeHeight > height
+					resizeWidth = height / originRatio
+					resizeHeight = height
 	activeDocument.resizeImage resizeWidth, resizeHeight
 	return
 
@@ -166,7 +173,7 @@ close = (showDialog = false) ->
 action = (width, height, method, targetFolderPath, saveFolderPath) ->
 	# 連番で保存する
 	AUTO_INCREMENT = true
-	INCREMENT_INITIAL = 0
+	INCREMENT_INITIAL = 1
 	# 連番ゼロ埋め
 	FILL_ZERO = 3
 
@@ -248,7 +255,7 @@ $dialog = new DialogUI 'リサイズ & トリミング', 700, 400, null, ->
 			if $method.val()
 				method = i
 				break
-		alert 'method #' + method
+		# alert 'method #' + method
 		@close()
 		action width, height, method, targetFolderPath, saveFolderPath
 
