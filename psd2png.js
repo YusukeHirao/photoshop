@@ -380,7 +380,7 @@ outputCSS = function(structures) {
   outputText = [];
   for (i = _i = 0, _len = structures.length; _i < _len; i = ++_i) {
     layer = structures[i];
-    z = i * 10;
+    z = 10000 - i * 10;
     text = "." + layer.name + " \{\n	position: absolute;\n	top: " + layer.y + "px;\n	left: " + layer.x + "px;\n	z-index: " + z + ";\n	width: " + layer.width + "px;\n	height: " + layer.height + "px;\n	background: url(" + layer.url + ") no-repeat scroll 0 0;\n\}";
     outputText.push(text);
   }
@@ -392,7 +392,6 @@ outputCSS = function(structures) {
   outputText = [];
   for (i = _j = 0, _len1 = structures.length; _j < _len1; i = ++_j) {
     layer = structures[i];
-    z = i * 10;
     text = "<div class=\"" + layer.name + "\"></div>";
     outputText.push(text);
   }
@@ -414,8 +413,8 @@ outputJSON = function(structures) {
   outputText = [];
   for (i = _i = 0, _len = structures.length; _i < _len; i = ++_i) {
     layer = structures[i];
-    z = i * 10;
-    text = "\{\n	\"name\": \"" + layer.name + "\",\n	\"selector\": \"." + layer.name + "\",\n	\"x\": " + layer.y + ",\n	\"y\": " + layer.x + ",\n	\"z\": " + z + ",\n	\"width\": " + layer.width + ",\n	\"height\": " + layer.height + ",\n	\"url\": \"" + layer.url + "\"\n\}";
+    z = 10000 - i * 10;
+    text = "\{\n	\"name\": \"" + layer.name + "\",\n	\"className\": \"" + layer.name + "\",\n	\"x\": " + layer.x + ",\n	\"y\": " + layer.y + ",\n	\"z\": " + z + ",\n	\"width\": " + layer.width + ",\n	\"height\": " + layer.height + ",\n	\"url\": \"" + layer.url + "\"\n\}";
     outputText.push(text);
   }
   outputFile = new File(saveFolder + '/' + 'structures.json');

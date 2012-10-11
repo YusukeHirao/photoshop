@@ -240,7 +240,7 @@ outputCSS = (structures) ->
 
 	outputText = []
 	for layer, i in structures
-		z = i * 10
+		z = 10000 - i * 10
 		text =
 			"""
 			.#{layer.name} \{
@@ -262,7 +262,6 @@ outputCSS = (structures) ->
 
 	outputText = []
 	for layer, i in structures
-		z = i * 10
 		text =
 			"""
 				<div class="#{layer.name}"></div>
@@ -296,14 +295,14 @@ outputJSON = (structures) ->
 
 	outputText = []
 	for layer, i in structures
-		z = i * 10
+		z = 10000 - i * 10
 		text =
 			"""
 			\{
 				"name": "#{layer.name}",
-				"selector": ".#{layer.name}",
-				"x": #{layer.y},
-				"y": #{layer.x},
+				"className": "#{layer.name}",
+				"x": #{layer.x},
+				"y": #{layer.y},
 				"z": #{z},
 				"width": #{layer.width},
 				"height": #{layer.height},
